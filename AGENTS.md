@@ -25,7 +25,7 @@ rainbowminer-api-client/
 
 1. **src layout** — The package lives under `src/rainbowminer_api_client/`, not the repo root. This prevents accidental imports from the source tree when tests should import the installed package. Setuptools is configured with `[tool.setuptools.packages.find] where = ["src"]` to match.
 
-2. **Dynamic versioning via setuptools_scm** — Version is derived from git tags at build time. The `version` field in `[project]` is declared as `dynamic = ["version"]`, and `[tool.setuptools_scm]` handles resolution. A `fallback_version = "0.1.0"` ensures builds succeed even before the first git tag is created. **To release a new version, create a git tag** (e.g., `git tag v0.2.0`). Development versions are automatically generated as `0.1.1.dev1+g<commit>` style strings.
+2. **Dynamic versioning via setuptools_scm** — Version is derived from git tags at build time. The `version` field in `[project]` is declared as `dynamic = ["version"]`, and `[tool.setuptools_scm]` handles resolution. A `fallback_version = "0.1.0"` ensures builds succeed even before the first git tag is created. **To release a new version, create a git tag** (e.g., `git tag 0.2.0`). Development versions are automatically generated as `0.1.1.dev1+g<commit>` style strings.
 
 3. **PEP 561 type marker** — The `py.typed` file in the package root signals to type checkers (ty, mypy, pyright) that this package includes inline type annotations. Type annotations are **required** on all public APIs.
 
@@ -149,7 +149,7 @@ Google style docstrings are required. Functions returning `None` (no `return` st
 
 - **Versioning:** setuptools_scm derives the version from git tags. No manual version bumps in `pyproject.toml`.
 - **Development versions:** Automatically generated (e.g., `0.1.1.dev1+g298f9f0e1.d20260707`).
-- **Releasing a new version:** `git tag v<version>` then `uv build` to produce sdist + wheel.
+- **Releasing a new version:** `git tag <version>` then `uv build` to produce sdist + wheel.
 - **Building:** `uv build` (produces `dist/` with sdist and wheel).
 - **Fallback version:** `0.1.0` is used when no git tags exist (configured in `[tool.setuptools_scm]`).
 
