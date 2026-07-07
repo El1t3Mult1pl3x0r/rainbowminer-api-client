@@ -54,7 +54,14 @@ class Device(RainbowMinerModel):
 
 
 class DeviceCombo(RainbowMinerModel):
-    """An entry from ``/devicecombos``."""
+    """An entry from ``/devicecombos``.
+
+    Newer servers return a plain list of device-name strings (e.g.
+    ``["CPU", "GPU#0"]``); this model is kept for forward-compatibility if
+    the server ever returns structured objects.
+    """
+
+    Name: str | None = None
 
 
 class DeviceConfigEntry(RainbowMinerModel):
@@ -92,10 +99,10 @@ class OCProfile(RainbowMinerModel):
 
     Name: str = ""
     Device: str = ""
-    PowerLimit: float | int | None = None
-    ThermalLimit: float | int | None = None
-    MemoryClockBoost: float | int | None = None
-    CoreClockBoost: float | int | None = None
-    LockVoltagePoint: float | int | None = None
-    LockMemoryClock: float | int | None = None
-    LockCoreClock: float | int | None = None
+    PowerLimit: float | int | str | None = None
+    ThermalLimit: float | int | str | None = None
+    MemoryClockBoost: float | int | str | None = None
+    CoreClockBoost: float | int | str | None = None
+    LockVoltagePoint: float | int | str | None = None
+    LockMemoryClock: float | int | str | None = None
+    LockCoreClock: float | int | str | None = None

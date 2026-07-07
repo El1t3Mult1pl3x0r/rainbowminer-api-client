@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import RootModel
+from pydantic import Field, RootModel
 
 from rainbowminer_api_client.models._base import RainbowMinerModel
 
@@ -18,6 +18,7 @@ __all__ = [
     "ComputerStats",
     "GarbageCollection",
     "IsServer",
+    "LockMinersState",
     "Platforms",
     "Session",
     "SessionVars",
@@ -31,13 +32,38 @@ __all__ = [
 class Version(RainbowMinerModel):
     """Version of the RainbowMiner server (``/version``).
 
+    The server returns a nested object with ``Version`` and ``RemoteVersion``
+    fields, each a ``System.Version``-style object (Major, Minor, Build,
+    Revision, ...).  For convenience the string form can be accessed via
+    :meth:`version_string`.
+
     Attributes:
-        Version: Version string (e.g. ``"5.4.1.2"``).
-        Build: Optional build identifier.
+        Version: Local version as a version-object dict (or a plain string
+            on older server versions).
+        RemoteVersion: Remote/latest version object, or ``None``.
+        Build: Optional build identifier (kept for backward compatibility).
     """
 
-    Version: str | None = None
+    Version: str | dict[str, Any] | None = None
+    RemoteVersion: dict[str, Any] | None = None
     Build: str | None = None
+
+    def version_string(self) -> str:
+        """Return the version as a dotted string (e.g. ``"5.0.1.9"``).
+
+        Handles both the object form (``{"Major": 5, "Minor": 0, ...}``)
+        and the legacy plain-string form.
+        """
+        v = self.Version
+        if isinstance(v, str):
+            return v
+        if isinstance(v, dict):
+            parts = []
+            for key in ("Major", "Minor", "Build", "Revision"):
+                if key in v and v[key] is not None:
+                    parts.append(str(v[key]))
+            return ".".join(parts) if parts else ""
+        return ""
 
 
 class Uptime(RainbowMinerModel):
@@ -62,20 +88,35 @@ class IsServer(RainbowMinerModel):
     Status: bool = False
 
 
+class LockMinersState(RainbowMinerModel):
+    """The nested ``LockMiners`` object inside :class:`Status`.
+
+    Attributes:
+        Enabled: Whether the lock feature is enabled.
+        Locked: Whether miners are currently locked.
+        Pools: List of locked pool names.
+    """
+
+    Enabled: bool = False
+    Locked: bool = False
+    Pools: list[str] = Field(default_factory=list)
+
+
 class Status(RainbowMinerModel):
     """Response of ``/status``.
 
     Attributes:
         Pause: Whether miners are globally paused.
         PauseIAOnly: Whether only IA (idle-aware) miners are paused.
-        LockMiners: Whether miner selection is locked.
+        LockMiners: Lock state — either a bool (legacy) or a
+            :class:`LockMinersState` object (current servers).
         IsExclusiveRun: Whether the current run is exclusive.
         IsDonationRun: Whether the current run is a donation run.
     """
 
     Pause: bool = False
     PauseIAOnly: bool = False
-    LockMiners: bool = False
+    LockMiners: bool | LockMinersState = False
     IsExclusiveRun: bool = False
     IsDonationRun: bool = False
 

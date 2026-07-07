@@ -135,6 +135,7 @@ __all__ = [
     "GarbageCollection",
     "IsServer",
     "LoadConfigJsonResult",
+    "LockMinersState",
     "Miner",
     "MinerConfig",
     "MinerInfo",

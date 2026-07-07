@@ -159,8 +159,8 @@ class MinerStat(RainbowMinerModel):
     PowerDraw: float | int | None = None
     Devices: str | None = None
     DeviceModel: str | None = None
-    MSIAprofile: str | None = None
-    OCprofile: str | None = None
+    MSIAprofile: str | int | None = None
+    OCprofile: str | dict[str, Any] | None = None
     Benchmarking: bool = False
     NeedsBenchmark: bool = False
     BenchmarkFailed: bool = False

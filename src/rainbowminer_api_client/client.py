@@ -616,8 +616,13 @@ class RainbowMinerClient:
         return _as_list(data)
 
     async def get_computer_stats(self) -> ComputerStats:
-        """Get computer statistics (``/computerstats``)."""
-        return ComputerStats.model_validate(await self._transport.get_json("/computerstats"))
+        """Get computer statistics (``/computerstats``).
+
+        The server returns ``null`` (HTTP 404) when computer stats are not yet
+        available; in that case an empty :class:`ComputerStats` is returned.
+        """
+        data = await self._transport.get_json("/computerstats")
+        return ComputerStats.model_validate(data if data is not None else {})
 
     async def get_miner_ports(self) -> dict[str, Any]:
         """Get miner port assignments (``/minerports``)."""

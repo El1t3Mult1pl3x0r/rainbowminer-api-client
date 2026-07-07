@@ -219,3 +219,8 @@ __marimo__/
 
 # External repos
 /external_repos
+
+# Recorded live API fixtures — may contain wallet addresses, IP addresses,
+# worker names, and other private data from a real RainbowMiner rig.
+# Keep the README so the directory survives, but never commit the JSON.
+tests/fixtures/real/*.json

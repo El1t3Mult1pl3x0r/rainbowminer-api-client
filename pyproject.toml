@@ -59,6 +59,9 @@ filterwarnings = [
     "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 asyncio_mode = "auto"
+markers = [
+    "live: marks tests that connect to a live RainbowMiner server (deselected by default)",
+]
 
 [tool.ruff]
 line-length = 120
