@@ -80,6 +80,10 @@ The `verify` task uses `dependsOrder: "sequence"` so steps run one after another
 - **Always** — before reporting a task as complete
 - **Not needed** — for changes to `README.md`, `AGENTS.md`, `.gitignore`, or other non-Python files only
 
+### Iterating on tests — use the VS Code Testing tool
+
+When iterating on test failures during development, **do not** run `uv run pytest` in the terminal. Instead, use the VS Code `runTests` tool (the testing integration), passing specific `files` paths to run only the relevant test files. This is faster and provides structured pass/fail output. The `verify` task (above) is still used for the full pre-completion verification flow, but `runTests` is the preferred tool for day-to-day test iteration.
+
 ## Code Style
 
 - **Formatter:** Ruff (line length 120, `target-version = "py314"`)
@@ -156,3 +160,4 @@ Google style docstrings are required. Functions returning `None` (no `return` st
 - Public API exports should be re-exported in `src/rainbowminer_api_client/__init__.py`.
 - Use `from __future__ import annotations` only if supporting older Python versions is needed (not required for 3.14+).
 - Prefer type annotations on all function signatures.
+- **Sync/async parity:** Every public async method on `RainbowMinerClient` must have a corresponding sync method on `SyncRainbowMinerClient` with the same name and signature (minus `async`/`await`). Parity is enforced by `tests/test_sync_client.py`. When adding a new async method to `RainbowMinerClient`, add the sync counterpart to `SyncRainbowMinerClient` in the same change.

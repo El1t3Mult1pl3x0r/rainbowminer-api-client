@@ -1,8 +1,18 @@
-"""Smoke tests for the rainbowminer_api_client package."""
+"""Smoke test: verify the package and its key public symbols import correctly."""
 
-from rainbowminer_api_client import hello
+from rainbowminer_api_client import (
+    BinaryResponse,
+    CurrentProfit,
+    RainbowMinerClient,
+    RainbowMinerError,
+    SyncRainbowMinerClient,
+)
 
 
-def test_hello() -> None:
-    """Verify the hello function returns the expected greeting."""
-    assert hello() == "Hello from rainbowminer-api-client!"
+def test_imports() -> None:
+    """Verify that the main public symbols are importable and correct types."""
+    assert RainbowMinerClient is not None
+    assert SyncRainbowMinerClient is not None
+    assert issubclass(RainbowMinerError, Exception)
+    assert BinaryResponse is not None
+    assert CurrentProfit is not None
