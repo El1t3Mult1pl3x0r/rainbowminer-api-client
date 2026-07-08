@@ -1,0 +1,156 @@
+name: Release
+
+"on":
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.2.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Manual trigger: create a lightweight tag on the current HEAD of main and
+  # push it.  The push event re-triggers this workflow via the push.tags trigger,
+  # which then runs validate -> build -> publish/github-release.
+  # ---------------------------------------------------------------------------
+  tag:
+    name: Create tag
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Validate version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version must match semver pattern X.Y.Z (got: $VERSION)"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          git tag "${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+  # ---------------------------------------------------------------------------
+  # Validate that the pushed tag points to a commit on the main branch.
+  # This runs only for the push.tags trigger (both CLI-pushed tags and tags
+  # created by the tag job above).
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate tag is on main
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_REF_NAME" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME is not on the main branch. Releases are only allowed from main."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Build sdist + wheel.  Requires full git history for setuptools_scm to
+  # resolve the version from the tag.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build distribution
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.3.1
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Sync environment
+        run: uv sync
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  # ---------------------------------------------------------------------------
+  # Publish to PyPI via Trusted Publishing (OIDC).  Requires the PyPI project
+  # to be configured with this repository, workflow filename, and environment.
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/rainbowminer-api-client
+    permissions:
+      id-token: write
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # ---------------------------------------------------------------------------
+  # Create a GitHub Release with auto-generated notes and attach the built
+  # sdist + wheel as release assets.  Runs in parallel with publish.
+  # ---------------------------------------------------------------------------
+  github-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*
