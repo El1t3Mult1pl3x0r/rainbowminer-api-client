@@ -3,7 +3,7 @@ name: Release
 "on":
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+\.[0-9]+\.[0-9]+'
   workflow_dispatch:
     inputs:
       version:
@@ -61,7 +61,7 @@ jobs:
   validate:
     name: Validate tag is on main
     needs: tag
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (needs.tag.result == 'success' || needs.tag.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -124,6 +124,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -147,6 +148,7 @@ jobs:
   github-release:
     name: Create GitHub Release
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
