@@ -20,8 +20,8 @@ permissions: {}
 jobs:
   # ---------------------------------------------------------------------------
   # Manual trigger: create a lightweight tag on the current HEAD of main and
-  # push it.  The push event re-triggers this workflow via the push.tags trigger,
-  # which then runs validate -> build -> publish/github-release.
+  # push it.  Note: pushes via GITHUB_TOKEN do not trigger new workflow runs,
+  # so the rest of the release pipeline runs in this same workflow_dispatch run.
   # ---------------------------------------------------------------------------
   tag:
     name: Create tag
@@ -54,13 +54,14 @@ jobs:
           git push origin "${{ inputs.version }}"
 
   # ---------------------------------------------------------------------------
-  # Validate that the pushed tag points to a commit on the main branch.
-  # This runs only for the push.tags trigger (both CLI-pushed tags and tags
-  # created by the tag job above).
+  # Validate that the tag points to a commit on the main branch.
+  # Runs for both triggers: push.tags (CLI-pushed tags) and workflow_dispatch
+  # (manual trigger, where the tag job created and pushed the tag).
   # ---------------------------------------------------------------------------
   validate:
     name: Validate tag is on main
-    if: github.event_name == 'push'
+    needs: tag
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,8 +72,15 @@ jobs:
       - name: Verify tag is on main
         run: |
           git fetch origin main
-          if ! git merge-base --is-ancestor "$GITHUB_REF_NAME" origin/main; then
-            echo "::error::Tag $GITHUB_REF_NAME is not on the main branch. Releases are only allowed from main."
+          # On push.tags, GITHUB_REF_NAME is the tag; on workflow_dispatch, the
+          # tag was created by the tag job from inputs.version.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.version }}"
+          else
+            TAG="$GITHUB_REF_NAME"
+          fi
+          if ! git merge-base --is-ancestor "$TAG" origin/main; then
+            echo "::error::Tag $TAG is not on the main branch. Releases are only allowed from main."
             exit 1
           fi
 
@@ -83,6 +91,7 @@ jobs:
   build:
     name: Build distribution
     needs: validate
+    if: ${{ !cancelled() && needs.validate.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -151,6 +160,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           generate_release_notes: true
           files: dist/*
