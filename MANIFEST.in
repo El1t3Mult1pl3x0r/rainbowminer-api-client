@@ -1,2 +1,5 @@
 # Exclude IDE-specific configuration from source distributions
 recursive-exclude .vscode *
+
+# Exclude CI/CD configuration from source distributions
+recursive-exclude .github *
