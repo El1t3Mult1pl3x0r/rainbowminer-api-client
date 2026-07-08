@@ -6,6 +6,8 @@
 
 A typed Python API client for [RainbowMiner](https://github.com/RainbowMiner/RainbowMiner), the multipool cryptominer. This library provides a clean, async-first interface to monitor and control a RainbowMiner server from Python applications — including [Home Assistant](https://www.home-assistant.io/) integrations.
 
+📚 **[Documentation](https://el1t3mult1pl3x0r.github.io/rainbowminer-api-client/)**
+
 The client is a **pure communication interface**: it sends HTTP requests to the RainbowMiner local API and parses the responses into typed Pydantic models. It does not execute anything on the RainbowMiner server itself.
 
 ## Features

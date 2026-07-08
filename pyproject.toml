@@ -28,6 +28,7 @@ dependencies = [
 Homepage = "https://github.com/El1t3Mult1pl3x0r/rainbowminer-api-client"
 Repository = "https://github.com/El1t3Mult1pl3x0r/rainbowminer-api-client"
 Issues = "https://github.com/El1t3Mult1pl3x0r/rainbowminer-api-client/issues"
+Documentation = "https://el1t3mult1pl3x0r.github.io/rainbowminer-api-client/"
 
 [build-system]
 requires = ["setuptools>=61", "setuptools-scm>=8"]
