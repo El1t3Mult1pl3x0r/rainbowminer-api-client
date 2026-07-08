@@ -41,12 +41,14 @@ fallback_version = "0.1.0"
 
 [dependency-groups]
 dev = [
+    "mkdocstrings-python>=2.0.5",
     "pydoclint>=0.9.1",
     "pytest>=9.1.1",
     "pytest-aiohttp>=1.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.20",
     "ty>=0.0.56",
+    "zensical>=0.0.47",
 ]
 
 [tool.pytest.ini_options]

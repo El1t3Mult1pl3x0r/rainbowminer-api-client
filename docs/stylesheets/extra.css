@@ -1,0 +1,101 @@
+/* rainbowminer-api-client — custom Zensical styling */
+
+/* ----------------------------------------------------------------------- */
+/* Landing page: hero section                                              */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset .mdx-hero {
+    margin: 0 -0.8rem;
+    padding: 2.5rem 1.5rem 2rem;
+    color: var(--md-default-fg-color);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--md-primary-fg-color) 8%, transparent),
+        color-mix(in srgb, var(--md-accent-fg-color) 6%, transparent)
+    );
+    border-radius: 0.4rem;
+}
+
+.md-typeset .mdx-hero h1 {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.md-typeset .mdx-hero > p {
+    max-width: 42rem;
+    font-size: 1.1rem;
+    color: var(--md-default-fg-color--light);
+}
+
+/* ----------------------------------------------------------------------- */
+/* Landing page: feature grid cards                                        */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.5rem;
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid.cards > ol > li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--md-accent-fg-color) 15%, transparent);
+    border-color: var(--md-accent-fg-color);
+}
+
+/* Card heading with icon */
+.md-typeset .grid.cards > ul > li > h3,
+.md-typeset .grid.cards > ol > li > h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0;
+    font-size: 1.0rem;
+}
+
+.md-typeset .grid.cards > ul > li > p,
+.md-typeset .grid.cards > ol > li > p {
+    font-size: 0.85rem;
+    color: var(--md-default-fg-color--light);
+}
+
+/* ----------------------------------------------------------------------- */
+/* Code blocks                                                              */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset .highlight {
+    border-radius: 0.4rem;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Tables                                                                   */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset table:not([class]) {
+    border-radius: 0.4rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--md-default-fg-color) 8%, transparent);
+}
+
+.md-typeset table:not([class]) th {
+    font-weight: 600;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Admonitions                                                              */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset .admonition {
+    border-radius: 0.4rem;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Content tabs                                                             */
+/* ----------------------------------------------------------------------- */
+
+.md-typeset .tabbed-labels {
+    border-radius: 0.4rem 0.4rem 0 0;
+}
