@@ -10,6 +10,7 @@ from rainbowminer_api_client import (
     RainbowMinerAPIError,
     RainbowMinerAuthError,
     RainbowMinerClient,
+    RainbowMinerConnectionError,
     RainbowMinerNotFoundError,
 )
 from rainbowminer_api_client._http import HttpTransport
@@ -129,3 +130,62 @@ class TestErrorMapping:
         with pytest.raises(RainbowMinerAPIError) as exc_info:
             await client.get_version()
         assert exc_info.value.status_code == 500
+
+
+class TestTimeoutHandling:
+    """Tests for timeout propagation and TimeoutError mapping in HttpTransport."""
+
+    @pytest.mark.usefixtures("aiohttp_client")
+    async def test_timeout_passed_to_shared_session_request(self, aiohttp_client: Any) -> None:
+        """session.request must receive the configured timeout when a shared session is used."""
+        from unittest.mock import patch
+
+        from aiohttp import web
+
+        app = web.Application()
+
+        async def ok(_request: web.Request) -> web.Response:
+            return web.json_response({"Version": "1.0"})
+
+        app.router.add_get("/version", ok)
+        test_client = await aiohttp_client(app)
+        client = RainbowMinerClient(host="127.0.0.1", port=test_client.port, timeout=5.0)
+        client._transport._session = test_client.session
+        client._transport._owns_session = False
+
+        captured_kwargs: dict[str, Any] = {}
+        original_request = test_client.session.request
+
+        # aiohttp's session.request returns a _RequestContextManager (not a
+        # coroutine), so the spy must be a plain function that delegates and
+        # returns that same object — not an async function.
+        def spy_request(*args: Any, **kwargs: Any) -> Any:
+            captured_kwargs.update(kwargs)
+            return original_request(*args, **kwargs)
+
+        with patch.object(test_client.session, "request", side_effect=spy_request):
+            await client.get_version()
+
+        assert "timeout" in captured_kwargs
+        assert captured_kwargs["timeout"] == client._transport._timeout
+        assert captured_kwargs["timeout"].total == 5.0
+
+    async def test_timeout_error_mapped_to_connection_error(self, test_server: Any) -> None:
+        """A raw TimeoutError from session.request should be wrapped in RainbowMinerConnectionError."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        client = RainbowMinerClient(host="127.0.0.1", port=test_server.port)
+        # session.request is a regular call returning an async context manager;
+        # raise TimeoutError immediately when it is called.  Must use MagicMock
+        # (not AsyncMock) so the exception fires before `async with` evaluates.
+        mock_session = MagicMock()
+        mock_session.request.side_effect = TimeoutError("simulated timeout")
+        mock_ensure = AsyncMock(return_value=mock_session)
+
+        with (
+            patch.object(client._transport, "_ensure_session", mock_ensure),
+            pytest.raises(RainbowMinerConnectionError, match="Timeout"),
+        ):
+            await client.get_version()
+
+        await client.close()

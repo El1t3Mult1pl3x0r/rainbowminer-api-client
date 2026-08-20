@@ -232,6 +232,7 @@ class HttpTransport:
                 params=clean_params,
                 data=data,
                 headers=headers,
+                timeout=self._timeout,
             ) as resp:
                 await self._raise_for_status(resp)
                 # The RainbowMiner server always returns text (JSON-encoded
@@ -239,6 +240,8 @@ class HttpTransport:
                 text = await resp.text()
         except aiohttp.ClientConnectorError as exc:
             raise RainbowMinerConnectionError(f"Cannot connect to {self._base_url}: {exc}") from exc
+        except TimeoutError as exc:
+            raise RainbowMinerConnectionError(f"Timeout requesting {self._base_url}: {exc}") from exc
         except aiohttp.ClientError as exc:
             raise RainbowMinerConnectionError(str(exc)) from exc
 
@@ -265,13 +268,17 @@ class HttpTransport:
         session = await self._ensure_session()
         try:
             headers = {"Authorization": self._auth_header} if self._auth_header else None
-            async with session.request(method, url, params=clean_params, headers=headers) as resp:
+            async with session.request(
+                method, url, params=clean_params, headers=headers, timeout=self._timeout
+            ) as resp:
                 await self._raise_for_status(resp)
                 data = await resp.read()
                 content_type = resp.content_type
                 filename = _filename_from_disposition(resp.headers.get("Content-Disposition", ""))
         except aiohttp.ClientConnectorError as exc:
             raise RainbowMinerConnectionError(f"Cannot connect to {self._base_url}: {exc}") from exc
+        except TimeoutError as exc:
+            raise RainbowMinerConnectionError(f"Timeout requesting {self._base_url}: {exc}") from exc
         except aiohttp.ClientError as exc:
             raise RainbowMinerConnectionError(str(exc)) from exc
 
