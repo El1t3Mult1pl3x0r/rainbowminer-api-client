@@ -122,7 +122,9 @@ class RainbowMinerClient:
         """Configure the client.
 
         Args:
-            host: Hostname or IP address of the RainbowMiner server.
+            host: Hostname or IP address of the RainbowMiner server.  IPv6
+                literals may be passed with or without brackets (e.g.
+                ``2001:db8::1`` or ``[2001:db8::1]``).
             port: TCP port the API server listens on (default ``4000``).
             username: Optional username for HTTP Basic auth.
             password: Optional password for HTTP Basic auth.

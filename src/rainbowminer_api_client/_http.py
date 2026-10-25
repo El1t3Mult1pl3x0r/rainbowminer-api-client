@@ -14,6 +14,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
+from yarl import URL
 
 from rainbowminer_api_client.errors import (
     RainbowMinerAPIError,
@@ -68,7 +69,9 @@ class HttpTransport:
         """Configure base URL, auth, and session management.
 
         Args:
-            host: Hostname or IP address of the RainbowMiner server.
+            host: Hostname or IP address of the RainbowMiner server.  IPv6
+                literals may be passed with or without brackets (e.g.
+                ``2001:db8::1`` or ``[2001:db8::1]``).
             port: TCP port the API server listens on (default ``4000``).
             username: Optional username for HTTP Basic auth.
             password: Optional password for HTTP Basic auth.
@@ -80,7 +83,16 @@ class HttpTransport:
                 :meth:`close`.
         """
         scheme = "https" if tls else "http"
-        self._base_url = f"{scheme}://{host}:{port}"
+        # Accept both bracketed and unbracketed IPv6 literals: strip brackets
+        # so URL.build receives a bare host, which it wraps in brackets again
+        # (required per RFC 3986 for IPv6 hosts).
+        host = host.removeprefix("[").removesuffix("]")
+        # URL.build brackets IPv6 literals correctly (e.g. 2001:db8::1 ->
+        # http://[2001:db8::1]:4000). A plain f-string would collide the
+        # address colons with the port separator. Note: yarl drops the port
+        # from the string when it equals the scheme default (80/443); the
+        # resulting requests are identical.
+        self._base_url = str(URL.build(scheme=scheme, host=host, port=port))
         self._auth_header: str | None = None
         if username is not None and password is not None:
             # aiohttp.encode_basic_auth already returns the full

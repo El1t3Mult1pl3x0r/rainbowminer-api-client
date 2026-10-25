@@ -115,7 +115,7 @@ with SyncRainbowMinerClient(
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| `host` | `str` | _(required)_ | RainbowMiner server hostname or IP |
+| `host` | `str` | _(required)_ | RainbowMiner server hostname or IP address (IPv4 or IPv6; brackets optional for IPv6) |
 | `port` | `int` | `4000` | RainbowMiner API port |
 | `username` | `str \| None` | `None` | HTTP Basic auth username |
 | `password` | `str \| None` | `None` | HTTP Basic auth password |

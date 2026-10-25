@@ -192,6 +192,7 @@ except RainbowMinerError as e:
 
 - Python 3.14+
 - RainbowMiner 4.x+ (API server must be enabled in config)
+- IPv4 and IPv6 host addresses are supported (`host` accepts IPv6 literals with or without brackets)
 
 ## License
 

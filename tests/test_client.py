@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import socket
 from typing import Any
 
 import pytest
+from aiohttp import web
 
 from rainbowminer_api_client import (
     RainbowMinerAPIError,
@@ -32,7 +34,9 @@ class TestConstruction:
     def test_tls(self) -> None:
         """Client should use https:// when tls=True."""
         client = RainbowMinerClient("example.com", 443, tls=True)
-        assert client._transport._base_url == "https://example.com:443"
+        # yarl drops the port from the string when it equals the scheme
+        # default (443 for https); the request URL is identical.
+        assert client._transport._base_url == "https://example.com"
 
     def test_auth_configured(self) -> None:
         """Client should configure Basic auth when username/password provided."""
@@ -189,3 +193,79 @@ class TestTimeoutHandling:
             await client.get_version()
 
         await client.close()
+
+
+def _ipv6_loopback_available() -> bool:
+    """Check whether the host can bind to the IPv6 loopback address."""
+    try:
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    except OSError:
+        return False
+    try:
+        sock.bind(("::1", 0))
+    except OSError:
+        return False
+    finally:
+        sock.close()
+    return True
+
+
+class TestBaseUrlConstruction:
+    """Tests for base URL construction, including IPv6 literal hosts."""
+
+    def test_ipv6_host_is_bracketed(self) -> None:
+        """IPv6 hosts must be wrapped in brackets in the base URL."""
+        transport = HttpTransport("2001:db8::1", 4000)
+        assert transport._base_url == "http://[2001:db8::1]:4000"
+
+    def test_ipv6_host_with_tls(self) -> None:
+        """IPv6 hosts must be bracketed when TLS is enabled."""
+        transport = HttpTransport("2001:db8::1", 4000, tls=True)
+        assert transport._base_url == "https://[2001:db8::1]:4000"
+
+    def test_pre_bracketed_ipv6_host(self) -> None:
+        """Already-bracketed IPv6 hosts are accepted and normalized."""
+        transport = HttpTransport("[2001:db8::1]", 4000)
+        assert transport._base_url == "http://[2001:db8::1]:4000"
+
+    def test_ipv4_host_unchanged(self) -> None:
+        """IPv4 hosts must not gain brackets."""
+        transport = HttpTransport("192.168.1.50", 4000)
+        assert transport._base_url == "http://192.168.1.50:4000"
+
+    def test_hostname_unchanged(self) -> None:
+        """Plain hostnames must be unaffected."""
+        transport = HttpTransport("rainbowminer.local", 4000)
+        assert transport._base_url == "http://rainbowminer.local:4000"
+
+    def test_ipv6_host_through_client(self) -> None:
+        """RainbowMinerClient must pass IPv6 hosts through to the transport."""
+        client = RainbowMinerClient("2001:db8::1", 4000)
+        assert client._transport._base_url == "http://[2001:db8::1]:4000"
+
+
+class TestIPv6LoopbackRequest:
+    """End-to-end test that a request goes out correctly over IPv6."""
+
+    @pytest.mark.skipif(not _ipv6_loopback_available(), reason="IPv6 loopback is not available")
+    async def test_request_over_ipv6_loopback(self) -> None:
+        """A real request to an IPv6 loopback server must succeed."""
+        from aiohttp.test_utils import TestServer
+
+        app = web.Application()
+
+        async def version(_request: web.Request) -> web.Response:
+            return web.json_response({"Version": "4.6.1.0", "VersionSort": "4.6.1.0", "VersionDate": "2026-01-01"})
+
+        app.router.add_get("/version", version)
+        server = TestServer(app, host="::1")
+        await server.start_server()
+        assert server.port is not None
+
+        client = RainbowMinerClient(host="::1", port=server.port)
+        try:
+            result = await client.get_version()
+            assert result.Version == "4.6.1.0"
+        finally:
+            await client.close()
+            await server.close()
